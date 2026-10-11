@@ -1,0 +1,8 @@
+.git
+.venv
+build
+haaska.zip
+__pycache__
+.pytest_cache
+config/*
+!config/config.json.sample

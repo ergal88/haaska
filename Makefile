@@ -5,25 +5,19 @@ SHELL := /bin/bash
 FUNCTION_NAME=haaska
 
 BUILD_DIR=build
+PYTHON ?= python3
 
-PIPVERSIONEQ9 := $(shell expr `pip3 -V | cut -d ' ' -f 2` \= 9.0.1)
-
-ifneq (,$(wildcard /etc/debian_version))
-	ifeq "$(PIPVERSIONEQ9)" "1"
-		PIP_VER=3
-        	PIP_EXTRA = --system
-	endif
-else
-        PIP_VER =
-	PIP_EXTRA =
-endif
-
-haaska.zip: haaska.py config/*
+# Always rebuild so removed configuration files cannot survive in the ZIP.
+.PHONY: haaska.zip
+haaska.zip: haaska.py requirements.txt config/*
+	@test -f config/config.json || { echo 'Create config/config.json before building'; exit 1; }
+	rm -rf $(BUILD_DIR)
+	rm -f $@
 	mkdir -p $(BUILD_DIR)
-	cp $^ $(BUILD_DIR)
-	pip$(PIP_VER) install $(PIP_EXTRA) -t $(BUILD_DIR) requests
+	cp haaska.py config/* $(BUILD_DIR)
+	$(PYTHON) -m pip install --no-compile --only-binary=:all: --platform any --implementation py --abi none -t $(BUILD_DIR) -r requirements.txt
 	chmod 755 $(BUILD_DIR)/haaska.py
-	cd $(BUILD_DIR); zip ../$@ -r *
+	cd $(BUILD_DIR) && zip ../$@ -r *
 
 .PHONY: deploy
 deploy: haaska.zip
