@@ -85,7 +85,12 @@ class Configuration(object):
         self.url = self.get_url(self.get(['url', 'ha_url']))
         self.ssl_verify = self.get(['ssl_verify', 'ha_cert'], default=True)
         self.bearer_token = self.get(['bearer_token'], default='')
-        self.ssl_client = self.get(['ssl_client'], default='')
+        self.ssl_client = self.get(['ssl_client']) or None
+        if isinstance(self.ssl_client, list):
+            # JSON represents the Requests (certificate, key) tuple as a list.
+            if len(self.ssl_client) != 2:
+                raise ValueError('ssl_client must contain certificate and key')
+            self.ssl_client = tuple(self.ssl_client)
         self.debug = self.get(['debug'], default=False)
 
     def get(self, keys, default=None):

@@ -19,6 +19,38 @@ Run tests
 python -m pytest test.py
 ```
 
+### Python 3.14 ZIP build
+
+The handler remains `haaska.event_handler` and uses the existing `config.json`
+format. Copy `config/config.json.sample` to `config/config.json` and fill in
+your Home Assistant URL and token before building. Certificate files can remain
+in `config/`, as before.
+
+Build with Python 3.14 and `make`, or use the Docker build environment:
+
+```sh
+docker build -t haaska-build .
+docker run --rm -v "$PWD:/usr/src/app" haaska-build
+```
+
+The build always starts clean and installs the pinned runtime dependencies from
+`requirements.txt`. It selects pure Python wheels so the ZIP does not contain
+architecture-specific extensions. Real configuration is mounted at build time,
+not copied into the Docker image. Keep the resulting ZIP private: it contains
+your configured token and any client certificate keys.
+
+To test the ZIP locally in the official Lambda Python 3.14 image, without AWS
+credentials or a connection to Home Assistant:
+
+```sh
+docker run --rm --network none --entrypoint /bin/sh \
+  -v "$PWD:/src:ro" public.ecr.aws/lambda/python:3.14 -c \
+  'python -m zipfile -e /src/haaska.zip /tmp/package && cd /tmp/package && PYTHONPATH=/tmp/package python /src/tests/smoke_lambda.py'
+```
+
+This checks the extracted handler and dependencies against a loopback HTTP
+server with fake credentials. It does not deploy or change the Lambda runtime.
+
 ### Thanks and Acknowledgement
 
 Thanks to [@auchter](https://github.com/auchter) for creating the original haaska.
